@@ -1,0 +1,76 @@
+#!/bin/bash
+
+#PBS -l nodes=1:ppn=10,walltime=2:00:00,feature=rhel7
+#PBS -j oe
+#PBS -m abe
+#PBS -M mdb5946@psu.edu
+#PBS -A wff3_a_g_hc_default
+
+# Go to the correct place
+
+cd $PBS_O_WORKDIR
+
+module load python/3.6.8
+module load anaconda3
+source activate /storage/home/mdb5946/.conda/envs/qiime2-2020.8
+
+#pick up here after using R decontam to ID contaminant ASVs to remove
+
+#filter out mithochondrial, chloroplast and unassigned ASVs, AND eukaryota
+qiime taxa filter-table \
+  --i-table feature_table.qza \
+  --i-taxonomy silva_taxonomy.qza \
+  --p-exclude mitochondria,chloroplast,unassigned,eukaryota \
+  --o-filtered-table feature_table_no_MtCpUnEuk.qza
+
+#filter out contaminant ASVs from decontam
+qiime feature-table filter-features \
+  --i-table feature_table_no_MtCpUnEuk.qza \
+  --p-exclude-ids \
+  --m-metadata-file asv_to_remove.txt \
+  --o-filtered-table feature_table_no_contam.qza
+
+#summarize new feature tabulate
+qiime feature-table summarize \
+  --i-table feature_table_no_contam.qza \
+  --o-visualization feature_table_no_contam.qzv
+
+#filter seqs to remove mt,cp,un,euk,contam for phylogeny
+qiime feature-table filter-seqs \
+  --i-data rep-seqs.qza \
+  --i-table feature_table_no_contam.qza \
+  --o-filtered-data rep-seqs_no_contam.qza
+
+#visualize
+qiime feature-table tabulate-seqs \
+  --i-data rep-seqs_no_contam.qza \
+  --o-visualization rep-seqs_no_contam.qzv
+
+#generate a tree for phylogenetic diversity analyses
+qiime phylogeny align-to-tree-mafft-fasttree \
+  --i-sequences rep-seqs_no_contam.qza \
+  --o-alignment aligned-rep-seqs_no_contam.qza \
+  --o-masked-alignment masked-aligned-rep-seqs_no_contam.qza \
+  --o-tree unrooted-tree_final.qza \
+  --o-rooted-tree rooted-tree_final.qza
+
+#produce alpha-rarefaction curve
+qiime diversity alpha-rarefaction \
+  --i-table feature_table_no_contam.qza \
+  --i-phylogeny rooted-tree_final.qza \
+  --p-max-depth 21000 \
+  --m-metadata-file metadata_16s_vermivora2.tsv \
+  --o-visualization alpha-rarefaction.qzv
+
+#export feature table to otu table (puts it in a folder called out-table.biom)
+qiime tools export \
+  --input-path feature_table_no_contam.qza \
+  --output-path otu_table_final
+
+#convert to tsv file for phyloseq
+biom convert -i  ./otu_table_final/feature-table.biom -o ./otu_table_final/feature-table.tsv --to-tsv
+
+#export tree for phyloseq
+qiime tools export \
+  --input-path rooted-tree_final.qza \
+  --output-path exported-tree_final
