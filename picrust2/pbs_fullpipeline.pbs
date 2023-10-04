@@ -1,0 +1,17 @@
+#!/bin/bash
+
+#PBS -l nodes=1:ppn=10,walltime=4:00:00
+#PBS -j oe
+#PBS -m abe
+#PBS -M mdb5946@psu.edu
+#PBS -A wff3_a_g_hc_default
+
+# Go to the correct place
+
+cd $PBS_O_WORKDIR
+
+module load python/3.6.8
+module load anaconda3
+source activate picrust2
+
+picrust2_pipeline.py -s ../sequences.fasta -i ../biom_ps3k.biom -o picrust2_out_pipeline -p 8
