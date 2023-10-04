@@ -67,6 +67,10 @@ physeq3 #5923 taxa and 158 samples
 length(unique(physeq3@sam_data$Band.)) #144 individuals
 #write physeq3 to redo analyses using relative abundance of OTUs
 saveRDS(physeq3, "/Users/marcellabaiz/Documents/Toews_Lab/vermivora_microbiome/qiime_output/phyloseq/rel_abund/physeq3.rds")
+#write vector for rel_abund script
+ids_for_rel_abund<-rownames(ps3k@sam_data)
+saveRDS(ids_for_rel_abund, "/Users/marcellabaiz/Documents/Toews_Lab/vermivora_microbiome/qiime_output/phyloseq/rel_abund/ids_for_rel_abund.rds")
+
 #id recaps
 table(duplicated(physeq3@sam_data$Band.)) #14 duplicated
 recap_bands<-physeq3@sam_data$Band.[which(duplicated(physeq3@sam_data$Band.))]
