@@ -4,6 +4,13 @@ library(Maaslin2)
 library(data.table)
 
 load('verm_picrust2.RData')
+
+#check NSTI values
+nsti<-read.table('./picrust2_out_pipeline/EC/weighted_nsti.tsv', sep='\t', header=T)
+hist(nsti$weighted_NSTI,breaks=20, main='', xlab='picrust2 Weighted NSTI')
+summary(nsti$weighted_NSTI)
+stats::sd(nsti$weighted_NSTI)
+
 #read in metadata
 m<-read.csv("../qiime_output/phyloseq/ps3k_metadata_forpicrust2.tsv", sep='\t', header=T, check.names = F) 
 m$Year<-as.character(m$Year)
