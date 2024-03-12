@@ -510,10 +510,10 @@ adonis2(jac_gwwa_2122 ~ State+Year, data=md_gw_2122, by='margin') # state r2=0.0
 adonis2(uni_gwwa_2122 ~ State+Year, data=md_gw_2122, by='margin') #ns
 adonis2(wuni_gwwa_2122 ~ State+Year, data=md_gw_2122, by='margin') #ns
 
-permutest(betadisper(bray_gwwa_2122, md_gw_2122$State)) #F=0.7661,p=0.359
-plot(betadisper(bray_gwwa_2122, md_gw_2122$State), seg.lwd = 0.5, main='')
-permutest(betadisper(bray_gwwa_2122, md_gw_2122$Year)) #F=0.0571,p=0.831
-plot(betadisper(bray_gwwa_2122, md_gw_2122$Year), seg.lwd = 0.5, main='')
+permutest(betadisper(jac_gwwa_2122, md_gw_2122$State)) 
+plot(betadisper(jac_gwwa_2122, md_gw_2122$State), seg.lwd = 0.5, main='')
+permutest(betadisper(jac_gwwa_2122, md_gw_2122$Year)) 
+plot(betadisper(jac_gwwa_2122, md_gw_2122$Year), seg.lwd = 0.5, main='')
 
 pdf('plots2/pcoa_gwwa_par_state_jacc2122.pdf', height=3, width=3.5)
 ordinate(ps_gwwa_2122, "PCoA", "jaccard") %>%
@@ -825,24 +825,7 @@ topp3k<-as.data.frame(ps3k@tax_table)
 table(topp3k$Phylum, useNA = 'always')
 sort(table(topp3k$Phylum), decreasing=T)
 sort(table(topp3k$Phylum)/sum(table(topp3k$Phylum)), decreasing=T) #top phyla by proportion
-
 topp<-names(sort(table(topp3k$Phylum), decreasing=T)[1:8]) #top 8 phyla
-
-glom3k<-tax_glom(ps3k, taxrank = "Phylum", NArm=F) #glom by phylum
-mglom3k<-psmelt(glom3k) #31 OTUs x 123 individuals=3813 rows
-mglom3k$Phylum[which(!(mglom3k$Phylum %in% topp))]<-'other' #change non-common phyla to other 
-table(mglom3k$Phylum)
-
-ggplot(mglom3k, aes(x = sample_Species, y = Abundance, fill = Phylum)) + 
-  geom_bar(stat = "identity", position = "fill") +
-  theme(axis.title.x=element_blank()) +
-  theme(panel.background = element_blank()) +
-  scale_fill_manual(values=c('cornsilk3','darkblue',
-                                        'cornflowerblue','coral3','darkgreen',
-                                        'darkolivegreen3','black','darkgoldenrod','gold2')) +
-                                          ggtitle('Rarefied dataset') +
-  scale_y_continuous(expand = c(0,0)) + scale_x_discrete(expand = c(0,0)) +
-  facet_wrap(vars(State))
 
 ###---how many OTUs are unique to each parental species?-----
 #parentals--all
@@ -907,32 +890,37 @@ table(ps3k_nar_pa@sam_data$admx, ps3k_nar_pa@sam_data$Species)
 md3k_nar_pa<-data.frame(sample_data(ps3k_nar_pa), row.names=rownames(sample_data(ps3k_nar_pa)))
 
 table(ps3k_nar_pa@sam_data$admx)
-#subset into groups for venn
-ps_bwwa_pa<-prune_samples(rownames(ps3k_nar_pa@sam_data)[which(ps3k_nar_pa@sam_data$admx=='BWWA')], ps3k_nar_pa) 
-ps_bwwa_pa<-prune_taxa(taxa_sums(ps_bwwa_pa) > 0, ps_bwwa_pa) #get rid of zero-sum OTUs
+#subset into groups for venn, only years 2021-2022
+pa_2122_individuals<-rownames(ps3k_nar_pa@sam_data)[which(ps3k_nar_pa@sam_data$Year %in% c('2021','2022'))] #make ps object of all pa birds 2021-2022
+ps_pa_2122<-prune_samples(rownames(ps_pa_all@sam_data) %in% pa_2122_individuals, ps_pa_all) 
+ps_pa_2122<-prune_taxa(taxa_sums(ps_pa_2122) > 0, ps_pa_2122) #get rid of zero-sum OTUs
+table(ps_pa_2122@sam_data$admx, useNA = 'always') 
 
-ps_gwwa_pa<-prune_samples(rownames(ps3k_nar_pa@sam_data)[which(ps3k_nar_pa@sam_data$admx=='GWWA')], ps3k_nar_pa) 
-ps_gwwa_pa<-prune_taxa(taxa_sums(ps_gwwa_pa) > 0, ps_gwwa_pa) #get rid of zero-sum OTUs
+ps_bwwa_pa_2122<-prune_samples(rownames(ps_pa_2122@sam_data)[which(ps_pa_2122@sam_data$admx=='BWWA')], ps_pa_2122) 
+ps_bwwa_pa_2122<-prune_taxa(taxa_sums(ps_bwwa_pa_2122) > 0, ps_bwwa_pa_2122) #get rid of zero-sum OTUs
 
-ps_int_pa<-prune_samples(rownames(ps3k_nar_pa@sam_data)[which(ps3k_nar_pa@sam_data$admx=='Intermediate')], ps3k_nar_pa) 
-ps_int_pa<-prune_taxa(taxa_sums(ps_int_pa) > 0, ps_int_pa) #get rid of zero-sum OTUs
+ps_gwwa_pa_2122<-prune_samples(rownames(ps_pa_2122@sam_data)[which(ps_pa_2122@sam_data$admx=='GWWA')], ps_pa_2122) 
+ps_gwwa_pa_2122<-prune_taxa(taxa_sums(ps_gwwa_pa_2122) > 0, ps_gwwa_pa_2122) #get rid of zero-sum OTUs
+
+ps_int_pa_2122<-prune_samples(rownames(ps_pa_2122@sam_data)[which(ps_pa_2122@sam_data$admx=='Intermediate')], ps_pa_2122) 
+ps_int_pa_2122<-prune_taxa(taxa_sums(ps_int_pa_2122) > 0, ps_int_pa_2122) #get rid of zero-sum OTUs
 
 venn.diagram(
-  x = list(rownames(ps_bwwa_pa@otu_table),rownames(ps_gwwa_pa@otu_table),rownames(ps_int_pa@otu_table)),
-  main='Appalachian HZ',
+  x = list(rownames(ps_bwwa_pa_2122@otu_table),rownames(ps_gwwa_pa_2122@otu_table),rownames(ps_int_pa_2122@otu_table)),
+  main='Appalachian HZ, 2021-22',
   category.names = c("BWWA" , "GWWA","Intermediate"), #including intermediates
-  filename = 'venn_par_pa.png',
+  filename = 'venn_par_pa_2122.png',
   output=TRUE,
   lwd = 2,
   lty = 'blank',
   fill = c('cornflowerblue','gold','gray')
-) #174 OTUs overlap in 3 groups
+) #40 OTUs overlap in 3 groups
 
 #manually plot to scale (used numbers from above)
 library(eulerr)
-pdf('plots2/venn_appalachian.pdf',height=3.5, width=4)
-plot(euler(c(A=1193, B=559, C=1513,'A&B'=67, 'B&C'=68, 'A&C'=189, 'A&B&C'=174)),
-     fill = c('cornflowerblue','gold','gray'), main='N ASVs, Appalachian HZ',
+pdf('plots2/venn_appalachian_2122.pdf',height=3.5, width=4)
+plot(euler(c(A=797, B=160, C=143,'A&B'=49, 'B&C'=2, 'A&C'=48, 'A&B&C'=40)),
+     fill = c('cornflowerblue','gold','gray'), main='N ASVs, Appalachian HZ, 2021-2022',
      alpha=0.7,quantities = list(cex =1.2), legend = list(labels = c("BWWA", "GWWA",'Admixed')))
 dev.off()
 pdf('plots2/venn_greatlakes.pdf',height=3.5, width=4)
@@ -1017,3 +1005,157 @@ summary(bwotu$prev) #2.1%
 sum(taxa_sums(ps_gw_otus)) #20538
 sum(taxa_sums(ps_gw_otus))/sum(taxa_sums(ps_parental_all)) #8% of all reads are private GWWA OTUs
 summary(gwotu$prev) #3.6%
+
+#table for supplement of sample size across years
+table(ps3k@sam_data$admx, ps3k@sam_data$Year) #for the 111 birds w/plumage scores
+table(ps3k@sam_data$Species, ps3k@sam_data$Year) #for the 123 birds in total
+
+#how many asvs in each hz in 2021-2022?
+ps_mi_all #1149 -- including kzoo birds, n=50
+ps3k_nar_mi #819 -- all mi individuals w/plumage scores, both years, n=39
+table(ps3k_nar_mi@sam_data$admx, useNA = 'always') 
+
+#pull out 234 ASVs shared by parental and admixed individuals
+shared234<-intersect(intersect(rownames(ps_bwwa_all@otu_table),rownames(ps_gwwa_all@otu_table)),rownames(ps_int@otu_table))
+tax_234<-data.frame(physeq@tax_table[which(rownames(physeq@tax_table) %in% shared234),])
+sort(table(tax_234$Phylum)/length(shared234), decreasing = T)
+
+#--effect size of year on alpha diversity
+#for supplement
+png('plots2/supp/alpha_year_chao1.png', width=3.5, height=3.5, units='in', res=1200)
+ggplot(alpha_nar, aes(x=Year, y=Chao1)) + 
+  geom_violin() + geom_dotplot(binaxis='y', stackdir='center', dotsize=0.4) +
+  stat_summary(fun.y=mean, geom="point", size=4, color="red", shape=18)
+dev.off()
+png('plots2/supp/alpha_year_shan.png', width=3.5, height=3.5, units='in', res=1200)
+ggplot(alpha_nar, aes(x=Year, y=Shannon)) +
+  geom_violin() + geom_dotplot(binaxis='y', stackdir='center', dotsize=0.4) +
+  stat_summary(fun.y=mean, geom="point", size=4, color="red", shape=18)
+dev.off()
+png('plots2/supp/alpha_year_pd.png', width=3.5, height=3.5, units='in', res=1200)
+ggplot(alpha_nar, aes(x=Year, y=PD)) +
+  geom_violin() + geom_dotplot(binaxis='y', stackdir='center', dotsize=0.4) +
+  stat_summary(fun.y=mean, geom="point", size=4, color="red", shape=18)
+dev.off()
+#2021-2022
+png('plots2/supp/alpha_admx_chao2122.png', width=3.5, height=3.5, units='in', res=1200)
+ggplot(alpha_r_2122, aes(x=admx, y=Chao1, fill=admx)) +
+  geom_violin() +  scale_fill_manual(values=c('gold','gray','cornflowerblue')) +
+  geom_dotplot(binaxis='y', stackdir='center', dotsize=0.4) + 
+  stat_summary(fun.y=mean, geom="point", size=4, color="red", shape=18)
+dev.off()
+png('plots2/supp/alpha_admx_shan2122.png', width=3.5, height=3.5, units='in', res=1200)
+ggplot(alpha_r_2122, aes(x=admx, y=Shannon, fill=admx)) +
+  geom_violin() +  scale_fill_manual(values=c('gold','gray','cornflowerblue')) +
+  geom_dotplot(binaxis='y', stackdir='center', dotsize=0.4) + 
+  stat_summary(fun.y=mean, geom="point", size=4, color="red", shape=18)
+dev.off()
+png('plots2/supp/alpha_admx_pd2122.png', width=3.5, height=3.5, units='in', res=1200)
+ggplot(alpha_r_2122, aes(x=admx, y=PD, fill=admx)) +
+  geom_violin(width=0.6) +  scale_fill_manual(values=c('gold','gray','cornflowerblue')) +
+  geom_dotplot(binaxis='y', stackdir='center', dotsize=0.4) + 
+  stat_summary(fun.y=mean, geom="point", size=4, color="red", shape=18)
+dev.off()
+#all years
+png('plots2/supp/alpha_admx_chao.png', width=3.5, height=3.5, units='in', res=1200)
+ggplot(subset(alpha_r, !is.na(admx)), aes(x=admx, y=Chao1, fill=admx)) +
+  geom_violin() +  scale_fill_manual(values=c('gold','gray','cornflowerblue')) +
+  geom_dotplot(binaxis='y', stackdir='center', dotsize=0.4) + 
+  stat_summary(fun.y=mean, geom="point", size=4, color="red", shape=18)
+dev.off()
+png('plots2/supp/alpha_admx_shan.png', width=3.5, height=3.5, units='in', res=1200)
+ggplot(subset(alpha_r, !is.na(admx)), aes(x=admx, y=Shannon, fill=admx)) +
+  geom_violin() +  scale_fill_manual(values=c('gold','gray','cornflowerblue')) +
+  geom_dotplot(binaxis='y', stackdir='center', dotsize=0.4) + 
+  stat_summary(fun.y=mean, geom="point", size=4, color="red", shape=18)
+dev.off()
+png('plots2/supp/alpha_admx_pd.png', width=3.5, height=3.5, units='in', res=1200)
+ggplot(subset(alpha_r, !is.na(admx)), aes(x=admx, y=PD, fill=admx)) +
+  geom_violin() +  scale_fill_manual(values=c('gold','gray','cornflowerblue')) +
+  geom_dotplot(binaxis='y', stackdir='center', dotsize=0.4) + 
+  stat_summary(fun.y=mean, geom="point", size=4, color="red", shape=18)
+dev.off()
+
+#relative abundance plot--full dataset, only birds with plumage scores
+mglom3k$admx<-factor(mglom3k$admx, levels=c('GWWA','Intermediate','BWWA')) #order for plot axis
+#by sample
+png('plots2/supp/relative_abundance.png', width=9, height=3, units='in', res=1200)
+ggplot(subset(mglom3k, !is.na(admx)), aes(x = Sample, y = Abundance, fill = Phylum)) + 
+  geom_bar(stat = "identity", position = "fill") +
+  theme(axis.title.x=element_blank()) +
+  theme(panel.background = element_blank()) +
+  scale_fill_manual(values=c('gray','#F64C32','#FF8A25','#FFD75F','#0078FF','#09A4DB','#006E9A','#008D9A','#465D98'))+
+  scale_y_continuous(expand = c(0,0)) + scale_x_discrete(expand = c(0,0)) +
+  facet_wrap(vars(Year,State)) +
+  theme(strip.background=element_rect(colour="black",fill="white")) +
+  facet_wrap(~admx, scales='free_x') +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  theme(panel.spacing = unit(0.7, "lines"))
+dev.off()
+
+#--nested models: hybrid zone nested in year
+#for full datset
+lm(Chao1 ~ admx + Year/State, data=alpha_nar) %>% car::Anova() 
+lm(Shannon ~ admx + Year/State, data=alpha_nar) %>% car::Anova()
+lm(PD ~ admx + Year/State, data=alpha_nar) %>% car::Anova() 
+#beta
+adonis2(bray3k_nar ~ admx+Year/State, data=md3k_nar, by='margin') 
+adonis2(jac3k_nar ~ admx+Year/State, data=md3k_nar, by='margin') 
+adonis2(uni3k_nar ~ admx+Year/State, data=md3k_nar, by='margin') 
+adonis2(wuni3k_nar ~ admx+Year/State, data=md3k_nar, by='margin')
+
+#for parentals
+lm(Chao1 ~ admx + Year/State, data=alpha_parental_all) %>% car::Anova()
+lm(Shannon ~ admx + Year/State, data=alpha_parental_all) %>% car::Anova()
+lm(PD ~ admx + Year/State, data=alpha_parental_all) %>% car::Anova()
+adonis2(bray_par ~ admx+Year/State, data=md_par, by='margin') 
+adonis2(jac_par ~ admx+Year/State, data=md_par, by='margin') 
+adonis2(uni_par ~ admx+Year/State, data=md_par, by='margin') 
+adonis2(wuni_par ~ admx+Year/State, data=md3k_nar, by='margin') 
+
+#for parentals GL
+lm(Chao1 ~ admx + Year/Region, data=alpha_mi_parental2) %>% car::Anova()
+lm(Shannon ~ admx + Year/Region, data=alpha_mi_parental2) %>% car::Anova()
+lm(PD ~ admx + Year/Region, data=alpha_mi_parental2) %>% car::Anova()
+adonis2(bray_mi_par ~ admx+Year/Region, data=md_mi_par, by='margin') 
+adonis2(jac_mi_par ~ admx+Year/Region, data=md_mi_par, by='margin') 
+adonis2(uni_mi_par ~ admx+Year/Region, data=md_mi_par, by='margin') 
+adonis2(wuni_mi_par ~ admx+Year/Region, data=md_mi_par, by='margin') 
+
+#for parental AP
+lm(Chao1 ~ admx + Year/Region, data=alpha_pa_parental_2122) %>% car::Anova()
+lm(Shannon ~ admx + Year/Region, data=alpha_pa_parental_2122) %>% car::Anova()
+lm(PD ~ admx + Year/Region, data=alpha_pa_parental_2122) %>% car::Anova()
+adonis2(bray_pa_par2122 ~ admx+Year/Region, data=md_pa_par2122, by='margin')
+adonis2(jac_pa_par2122 ~ admx+Year/Region, data=md_pa_par2122, by='margin')
+adonis2(uni_pa_par2122 ~ admx+Year/Region, data=md_pa_par2122, by='margin')
+adonis2(wuni_pa_par2122 ~ admx+Year/Region, data=md_pa_par2122, by='margin')
+
+#for gwwa
+lm(Chao1 ~ Year/State, data=alpha_gw2122) %>% car::Anova()
+lm(Shannon ~  Year/State, data=alpha_gw2122) %>% car::Anova()
+lm(PD ~ Year/State, data=alpha_gw2122) %>% car::Anova()
+adonis2(bray_gwwa_2122 ~ Year/State, data=md_gw_2122, by='margin')
+adonis2(jac_gwwa_2122 ~ Year/State, data=md_gw_2122, by='margin')
+adonis2(uni_gwwa_2122 ~ Year/State, data=md_gw_2122, by='margin')
+adonis2(wuni_gwwa_2122 ~ Year/State, data=md_gw_2122, by='margin')
+
+#for admixed individuals
+#alpha diversity
+lm(Chao1 ~ Year/State, data=alpha_int_2122) %>% car::Anova() 
+lm(Shannon ~ Year/State, data=alpha_int_2122) %>% car::Anova()
+lm(PD ~ Year/State, data=alpha_int_2122) %>% car::Anova() 
+#beta
+adonis2(bray_int_2122 ~ Year/State, data=md_int_2122, by='margin') 
+adonis2(jac_int_2122 ~ Year/State, data=md_int_2122, by='margin') 
+adonis2(uni_int_2122 ~ Year/State, data=md_int_2122, by='margin') 
+adonis2(wuni_int_2122 ~ Year/State, data=md_int_2122, by='margin')
+
+#for bwwa
+lm(Chao1 ~ Year/State, data=alpha_bw2122) %>% car::Anova()
+lm(Shannon ~ Year/State, data=alpha_bw2122) %>% car::Anova()
+lm(PD ~ Year/State, data=alpha_bw2122) %>% car::Anova()
+adonis2(bray_bwwa_2122 ~ Year/State, data=md_bw_2122, by='margin')
+adonis2(jac_bwwa_2122 ~ Year/State, data=md_bw_2122, by='margin')
+adonis2(uni_bwwa_2122 ~ Year/State, data=md_bw_2122, by='margin')
+adonis2(wuni_bwwa_2122 ~ Year/State, data=md_bw_2122, by='margin')
